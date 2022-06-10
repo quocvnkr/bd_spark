@@ -37,7 +37,7 @@ object SparkDataSets extends App{
     
     import spark.implicits._
        
-            // Create a Spark DataFrame
+    // Create a Spark DataFrame
     val headerAndRows = csv.map(line => line.split(",").map(_.trim))
     val header = headerAndRows.first
     val mtcdata = headerAndRows.filter(_(0) != header(0))
