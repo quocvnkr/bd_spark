@@ -42,22 +42,25 @@ object Main extends App {
     StructField("cyl", StringType, nullable = false),
     StructField("mpg", StringType, nullable = false)
   ))
-  val agg4 = sampleAndAgg(populationDF, 4)
-  val agg6 = sampleAndAgg(populationDF, 6)
-  val agg8 = sampleAndAgg(populationDF, 8)
+
+  val iteration = 10
+
+  val agg4 = sampleAndAgg(populationDF, 4, iteration)
+  val agg6 = sampleAndAgg(populationDF, 6, iteration)
+  val agg8 = sampleAndAgg(populationDF, 8, iteration)
+
   Seq((4, agg4._1, agg4._2), (6, agg6._1, agg6._2), (8, agg8._1, agg8._2))
     .toDF("Category", "Mean", "Var")
     .show()
 
-  def sampleAndAgg(df: sql.DataFrame, cyl: Int): (Double, Double) = {
+  def sampleAndAgg(df: sql.DataFrame, cyl: Int, iteration: Int): (Double, Double) = {
     val sample25 = df
       .filter($"cyl" === cyl).rdd
       .takeSample(withReplacement = false, (df.count()*25/100).toInt)
     val sample25RDD = sc.makeRDD(sample25)
-    val loopSize = 10
 
     var meanSum, varSum = BigDecimal(0)
-    for (_ <- 1 to loopSize) {
+    for (_ <- 1 to iteration) {
       val sample100 = sample25RDD
         .takeSample(withReplacement = true, sample25.length)
 
@@ -66,11 +69,11 @@ object Main extends App {
           variance("mpg"))
         .collect()
 
-      meanSum += agg.map(_.getDouble(0)).sum
-      varSum += agg.map(_.getDouble(1)).sum
+      meanSum += agg(0).getDouble(0)
+      varSum += agg(0).getDouble(1)
     }
 
-    ((meanSum / loopSize).setScale(2, RoundingMode.HALF_UP).toDouble,
-      (varSum / loopSize).setScale(2, RoundingMode.HALF_UP).toDouble)
+    ((meanSum / iteration).setScale(2, RoundingMode.HALF_UP).toDouble,
+      (varSum / iteration).setScale(2, RoundingMode.HALF_UP).toDouble)
   }
 }
