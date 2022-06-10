@@ -73,7 +73,7 @@ object SparkDataSets extends App{
     
 
         
-        // Datasets from Scala objects
+    // Datasets from Scala objects
     val info = List(("mike", 24), ("joe", 34), ("jack", 55))
     val infoRDD = spark.sparkContext.parallelize(info)
     val people = infoRDD.map(r => Person(r._1, r._2)).toDS()

@@ -18,7 +18,7 @@ object Main extends App {
   // step 1
   val spark = SparkSession.builder()
     .appName("Spark and SparkSQL")
-    .master("local")
+    .master("local[*]")
     .getOrCreate()
   val sc = spark.sparkContext
   sc.setLogLevel("WARN")
@@ -35,15 +35,17 @@ object Main extends App {
     .map(p => (p(2), p(1)))
     .toDF("cyl", "mpg")
 
-  // step 3
+  println("==================== STEP 3 ====================")
+  println()
   populationDF
-    .groupBy(col("cyl").as("Category"))
+    .groupBy(col("cyl").as("Cylinder"))
     .agg(round(mean("mpg"), 2).as("Mean"),
       round(variance("mpg"), 2).as("Var"))
-    .sort("Category")
+    .sort("Cylinder")
     .show()
 
-  // step 4 & step 5
+  println("================= STEP 4, 5, 6 =================")
+  println()
   val schema = StructType(Array(
     StructField("cyl", StringType, nullable = false),
     StructField("mpg", StringType, nullable = false)
@@ -57,21 +59,22 @@ object Main extends App {
   val agg8 = sampleAndAgg(populationDF, 8, samplingPercentage, iteration)
 
   Seq((4, agg4._1, agg4._2), (6, agg6._1, agg6._2), (8, agg8._1, agg8._2))
-    .toDF("Category", "Mean", "Var")
+    .toDF("Cylinder", "Mean", "Var")
+    .sort("Cylinder")
     .show()
 
   def sampleAndAgg(df: sql.DataFrame, cyl: Int, samplingPercentage: Int, iteration: Int): (Double, Double) = {
-    val sample25 = df
+    val sample = df
       .filter($"cyl" === cyl).rdd
       .takeSample(withReplacement = false, (df.count()*samplingPercentage/100).toInt)
-    val sample25RDD = sc.makeRDD(sample25)
+    val sampleRDD = sc.makeRDD(sample)
 
     var meanSum, varSum = BigDecimal(0)
     for (_ <- 1 to iteration) {
-      val sample100 = sample25RDD
-        .takeSample(withReplacement = true, sample25.length)
+      val resample = sampleRDD
+        .takeSample(withReplacement = true, sample.length)
 
-      val agg = spark.createDataFrame(sc.parallelize(sample100), schema)
+      val agg = spark.createDataFrame(sc.parallelize(resample), schema)
         .agg(mean("mpg"),
           variance("mpg"))
         .collect()

@@ -2,7 +2,7 @@ package bd
 
 import org.apache.spark.sql
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.functions.{col, mean, round, variance}
+import org.apache.spark.sql.functions.{col, mean, regexp_replace, round, variance}
 import org.apache.spark.sql.types.{StringType, StructField, StructType}
 
 import scala.math.BigDecimal.RoundingMode
@@ -18,7 +18,7 @@ object MainSalary extends App {
   // step 1
   val spark = SparkSession.builder()
     .appName("Spark and SparkSQL")
-    .master("local")
+    .master("local[*]")
     .getOrCreate()
   val sc = spark.sparkContext
   sc.setLogLevel("WARN")
@@ -26,7 +26,7 @@ object MainSalary extends App {
   import sqlContext.implicits._
 
   val csv = sc.textFile("input/Salaries.csv")
-  val headerAndRows = csv.map(line => line.split(",").map(_.trim))
+  val headerAndRows = csv.map(line => line.split(",").map(_.trim.replaceAll("\"", "")))
   val header = headerAndRows.first
   val mtcdata = headerAndRows.filter(_ (0) != header(0))
 
@@ -36,6 +36,8 @@ object MainSalary extends App {
     .toDF("rank", "salary")
 
   // step 3
+  println("==================== STEP 3 ====================")
+  println()
   populationDF
     .groupBy(col("rank").as("Rank"))
     .agg(round(mean("salary"), 2).as("Mean"),
@@ -43,7 +45,9 @@ object MainSalary extends App {
     .sort("Rank")
     .show()
 
-  // step 4 & step 5
+  println("================= STEP 4, 5, 6 =================")
+  println()
+  // step 4, 5, 6
   val schema = StructType(Array(
     StructField("rank", StringType, nullable = false),
     StructField("salary", StringType, nullable = false)
@@ -57,19 +61,15 @@ object MainSalary extends App {
   val aggAsstProf = sampleAndAgg(populationDF, "AsstProf", samplingPercentage, iteration)
 
   Seq(("Prof", aggProf._1, aggProf._2), ("AssocProf", aggAssocProf._1, aggAssocProf._2), ("AsstProf", aggAsstProf._1, aggAsstProf._2))
-    .toDF("Category", "Mean", "Var")
+    .toDF("Rank", "Mean", "Var")
+    .sort("Rank")
     .show()
 
   def sampleAndAgg(df: sql.DataFrame, rank: String, samplingPercentage: Int, iteration: Int): (Double, Double) = {
-    println("original df =>" + df.collect().length)
-    df.show()
 
    val sample = df
-      .filter($"rank" === s""" + rank + s""").rdd
+      .filter($"rank" === rank).rdd
       .takeSample(withReplacement = false, (df.count()*samplingPercentage/100).toInt)
-
-    val sample2 = df.filter(df("rank") === rank).show()
-    val sample3 = df.filter(col("rank") === rank).show()
 
     val sampleRDD = sc.makeRDD(sample)
 
