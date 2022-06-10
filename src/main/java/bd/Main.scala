@@ -9,6 +9,12 @@ import scala.math.BigDecimal.RoundingMode
 import scala.math._
 
 object Main extends App {
+
+  if (args.length != 2) {
+    println("Application arguments must be 2 as: <sampling percentage> <num of iteration>")
+    sys.exit()
+  }
+
   // step 1
   val spark = SparkSession.builder()
     .appName("Spark and SparkSQL")
@@ -43,20 +49,21 @@ object Main extends App {
     StructField("mpg", StringType, nullable = false)
   ))
 
-  val iteration = 10
+  val samplingPercentage = args(0).toInt
+  val iteration = args(1).toInt
 
-  val agg4 = sampleAndAgg(populationDF, 4, iteration)
-  val agg6 = sampleAndAgg(populationDF, 6, iteration)
-  val agg8 = sampleAndAgg(populationDF, 8, iteration)
+  val agg4 = sampleAndAgg(populationDF, 4, samplingPercentage, iteration)
+  val agg6 = sampleAndAgg(populationDF, 6, samplingPercentage, iteration)
+  val agg8 = sampleAndAgg(populationDF, 8, samplingPercentage, iteration)
 
   Seq((4, agg4._1, agg4._2), (6, agg6._1, agg6._2), (8, agg8._1, agg8._2))
     .toDF("Category", "Mean", "Var")
     .show()
 
-  def sampleAndAgg(df: sql.DataFrame, cyl: Int, iteration: Int): (Double, Double) = {
+  def sampleAndAgg(df: sql.DataFrame, cyl: Int, samplingPercentage: Int, iteration: Int): (Double, Double) = {
     val sample25 = df
       .filter($"cyl" === cyl).rdd
-      .takeSample(withReplacement = false, (df.count()*25/100).toInt)
+      .takeSample(withReplacement = false, (df.count()*samplingPercentage/100).toInt)
     val sample25RDD = sc.makeRDD(sample25)
 
     var meanSum, varSum = BigDecimal(0)
