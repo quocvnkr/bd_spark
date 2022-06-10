@@ -19,7 +19,7 @@ object Main extends App {
   val sqlContext = spark.sqlContext
   import sqlContext.implicits._
 
-  val csv = sc.textFile("mtcars.csv")
+  val csv = sc.textFile("input/mtcars.csv")
   val headerAndRows = csv.map(line => line.split(",").map(_.trim))
   val header = headerAndRows.first
   val mtcdata = headerAndRows.filter(_ (0) != header(0))
@@ -49,28 +49,28 @@ object Main extends App {
     .toDF("Category", "Mean", "Var")
     .show()
 
-  def sampleAndAgg(df: sql.DataFrame, cyl: Int): (BigDecimal, BigDecimal) = {
+  def sampleAndAgg(df: sql.DataFrame, cyl: Int): (Double, Double) = {
     val sample25 = df
       .filter($"cyl" === cyl).rdd
       .takeSample(withReplacement = false, (df.count()*25/100).toInt)
     val sample25RDD = sc.makeRDD(sample25)
+    val loopSize = 10
 
     var meanSum, varSum = BigDecimal(0)
-    for (_ <- 1 to 1000) {
+    for (_ <- 1 to loopSize) {
       val sample100 = sample25RDD
         .takeSample(withReplacement = true, sample25.length)
 
-      spark.createDataFrame(sc.parallelize(sample100), schema)
-        .groupBy(col("cyl"))
+      val agg = spark.createDataFrame(sc.parallelize(sample100), schema)
         .agg(mean("mpg"),
           variance("mpg"))
-        .foreach(r => {
-          meanSum += r.getDouble(1)
-          varSum += r.getDouble(2)
-        })
+        .collect()
+
+      meanSum += agg.map(_.getDouble(0)).sum
+      varSum += agg.map(_.getDouble(1)).sum
     }
 
-    ((meanSum / 1000).setScale(2, RoundingMode.HALF_UP),
-      (varSum / 1000).setScale(2, RoundingMode.HALF_UP))
+    ((meanSum / loopSize).setScale(2, RoundingMode.HALF_UP).toDouble,
+      (varSum / loopSize).setScale(2, RoundingMode.HALF_UP).toDouble)
   }
 }
