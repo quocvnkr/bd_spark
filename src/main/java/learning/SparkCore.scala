@@ -1,4 +1,4 @@
-package bd
+package learning
 
 import org.apache.spark.{SparkConf, SparkContext}
 

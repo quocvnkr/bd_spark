@@ -36,6 +36,8 @@ object Main extends App {
     .toDF("cyl", "mpg")
 
   // step 3
+  println("Actual")
+
   populationDF
     .groupBy(col("cyl").as("Category"))
     .agg(round(mean("mpg"), 2).as("Mean"),
@@ -43,7 +45,7 @@ object Main extends App {
     .sort("Category")
     .show()
 
-  // step 4 & step 5
+  // step 4, 5 & 6
   val schema = StructType(Array(
     StructField("cyl", StringType, nullable = false),
     StructField("mpg", StringType, nullable = false)
@@ -51,6 +53,7 @@ object Main extends App {
 
   val samplingPercentage = args(0).toInt
   val iteration = args(1).toInt
+  println(s"Estimate: ${samplingPercentage}, Iteration: ${iteration}")
 
   val agg4 = sampleAndAgg(populationDF, 4, samplingPercentage, iteration)
   val agg6 = sampleAndAgg(populationDF, 6, samplingPercentage, iteration)
@@ -83,4 +86,10 @@ object Main extends App {
     ((meanSum / iteration).setScale(2, RoundingMode.HALF_UP).toDouble,
       (varSum / iteration).setScale(2, RoundingMode.HALF_UP).toDouble)
   }
+
+//  def myMean(arr : Array[sql.Row]): (Double, Double) = {
+//    val arr0 = arr.map(_.getDouble(0))
+//    val arr1 = arr.map(_.getDouble(1))
+//    (arr0.sum / arr0.length, arr1.sum / arr1.length)
+//  }
 }
