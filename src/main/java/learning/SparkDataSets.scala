@@ -1,6 +1,6 @@
-package bd
+package learning
 
-    /**************************************************
+/**************************************************
      * Note: In Maven dependency                      *
      * Spark and Spark SQL must have the same version * 
      * This code is created using 2.11 version 2.3.0  *
@@ -11,12 +11,7 @@ package bd
      *                                                *
      * must be set in Windows 10                      *
     ***************************************************/
-import java.io._
-import scala.io.Source
-import scala.math.random
-import org.apache.spark._
-import org.apache.spark.sql.types.{DoubleType, StringType, StructField, StructType}
-import org.apache.spark.sql.{Row, SparkSession}
+import org.apache.spark.sql.SparkSession
 
 //import org.apache.spark.sql.{DataFrame, SQLContext}
 //import au.com.bytecode.opencsv.CSVParser

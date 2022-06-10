@@ -35,7 +35,6 @@ object MainSalary extends App {
     .map(p => (p(1), p(6)))
     .toDF("rank", "salary")
 
-  // step 3
   println("==================== STEP 3 ====================")
   println()
   populationDF

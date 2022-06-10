@@ -18,7 +18,7 @@ object Main extends App {
   // step 1
   val spark = SparkSession.builder()
     .appName("Spark and SparkSQL")
-    .master("local[*]")
+    .master("local")
     .getOrCreate()
   val sc = spark.sparkContext
   sc.setLogLevel("WARN")
@@ -37,11 +37,13 @@ object Main extends App {
 
   println("==================== STEP 3 ====================")
   println()
+  println("Actual")
+
   populationDF
-    .groupBy(col("cyl").as("Cylinder"))
+    .groupBy(col("cyl").as("Category"))
     .agg(round(mean("mpg"), 2).as("Mean"),
       round(variance("mpg"), 2).as("Var"))
-    .sort("Cylinder")
+    .sort("Category")
     .show()
 
   println("================= STEP 4, 5, 6 =================")
@@ -53,28 +55,28 @@ object Main extends App {
 
   val samplingPercentage = args(0).toInt
   val iteration = args(1).toInt
+  println(s"Sampling percentage (%): ${samplingPercentage}, Iteration: ${iteration}")
 
   val agg4 = sampleAndAgg(populationDF, 4, samplingPercentage, iteration)
   val agg6 = sampleAndAgg(populationDF, 6, samplingPercentage, iteration)
   val agg8 = sampleAndAgg(populationDF, 8, samplingPercentage, iteration)
 
   Seq((4, agg4._1, agg4._2), (6, agg6._1, agg6._2), (8, agg8._1, agg8._2))
-    .toDF("Cylinder", "Mean", "Var")
-    .sort("Cylinder")
+    .toDF("Category", "Mean", "Var")
     .show()
 
   def sampleAndAgg(df: sql.DataFrame, cyl: Int, samplingPercentage: Int, iteration: Int): (Double, Double) = {
-    val sample = df
+    val sample25 = df
       .filter($"cyl" === cyl).rdd
       .takeSample(withReplacement = false, (df.count()*samplingPercentage/100).toInt)
-    val sampleRDD = sc.makeRDD(sample)
+    val sample25RDD = sc.makeRDD(sample25)
 
     var meanSum, varSum = BigDecimal(0)
     for (_ <- 1 to iteration) {
-      val resample = sampleRDD
-        .takeSample(withReplacement = true, sample.length)
+      val sample100 = sample25RDD
+        .takeSample(withReplacement = true, sample25.length)
 
-      val agg = spark.createDataFrame(sc.parallelize(resample), schema)
+      val agg = spark.createDataFrame(sc.parallelize(sample100), schema)
         .agg(mean("mpg"),
           variance("mpg"))
         .collect()
@@ -86,4 +88,10 @@ object Main extends App {
     ((meanSum / iteration).setScale(2, RoundingMode.HALF_UP).toDouble,
       (varSum / iteration).setScale(2, RoundingMode.HALF_UP).toDouble)
   }
+
+//  def myMean(arr : Array[sql.Row]): (Double, Double) = {
+//    val arr0 = arr.map(_.getDouble(0))
+//    val arr1 = arr.map(_.getDouble(1))
+//    (arr0.sum / arr0.length, arr1.sum / arr1.length)
+//  }
 }
