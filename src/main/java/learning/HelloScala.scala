@@ -1,0 +1,5 @@
+package learning
+
+object HelloScala {
+
+}
