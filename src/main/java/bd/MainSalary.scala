@@ -55,6 +55,15 @@ object MainSalary extends App {
   val samplingPercentage = args(0).toInt
   val iteration = args(1).toInt
 
+  val categories = mtcdata.map(p => p(1)).distinct().collect()
+  var seqAggs = Seq[(String, Double, Double)]()
+  categories.foreach(x => {
+    val samplingResult = sampleAndAgg(populationDF, x, samplingPercentage, iteration)
+    seqAggs = seqAggs :+ (x, samplingResult._1, samplingResult._2)
+  })
+  println("Estimation Result")
+  seqAggs.toDF("Rank", "Mean", "Var").show
+/*
   val aggProf = sampleAndAgg(populationDF, "Prof", samplingPercentage, iteration)
   val aggAssocProf = sampleAndAgg(populationDF, "AssocProf", samplingPercentage, iteration)
   val aggAsstProf = sampleAndAgg(populationDF, "AsstProf", samplingPercentage, iteration)
@@ -63,7 +72,7 @@ object MainSalary extends App {
     .toDF("Rank", "Mean", "Var")
     .sort("Rank")
     .show()
-
+*/
   def sampleAndAgg(df: sql.DataFrame, rank: String, samplingPercentage: Int, iteration: Int): (Double, Double) = {
 
    val sample = df

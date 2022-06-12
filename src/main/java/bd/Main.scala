@@ -49,23 +49,23 @@ object Main extends App {
   println("================= STEP 4, 5, 6 =================")
   println()
 
-
   val samplingPercentage = args(0).toInt
   val iteration = args(1).toInt
   println(s"Sampling percentage (%): ${samplingPercentage}, Iteration: ${iteration}")
-
-  val agg4 = sampleAndAgg(populationDF, 4, samplingPercentage, iteration)
-  val agg6 = sampleAndAgg(populationDF, 6, samplingPercentage, iteration)
-  val agg8 = sampleAndAgg(populationDF, 8, samplingPercentage, iteration)
-
-  Seq((4, agg4._1, agg4._2), (6, agg6._1, agg6._2), (8, agg8._1, agg8._2))
-    .toDF("Category", "Mean", "Var")
-    .show()
 
   val schema = StructType(Array(
     StructField("cyl", StringType, nullable = false),
     StructField("mpg", StringType, nullable = false)
   ))
+
+  val categories = mtcData.map(p => p(2).toInt).distinct().collect()
+  var seqAggs = Seq[(Int, Double, Double)]()
+  categories.foreach(x => {
+    val samplingResult = sampleAndAgg(populationDF, x, samplingPercentage, iteration)
+    seqAggs = seqAggs :+ (x, samplingResult._1, samplingResult._2)
+  })
+  println("Estimation Result")
+  seqAggs.toDF("Rank", "Mean", "Var").show
 
   def sampleAndAgg(df: sql.DataFrame, cyl: Int, samplingPercentage: Int, iteration: Int): (Double, Double) = {
     val sample = df
@@ -74,7 +74,8 @@ object Main extends App {
     val sampleRDD = sc.makeRDD(sample)
 
     var meanSum, varSum = BigDecimal(0)
-    for (_ <- 1 to iteration) {
+    var a = 0
+    for (a <- 1 to iteration) {
       val resample = sampleRDD
         .takeSample(withReplacement = true, sample.length)
 

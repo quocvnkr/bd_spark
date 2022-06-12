@@ -57,7 +57,6 @@ object SparkCore extends App {
 
     val tf = sc.textFile("dataFile")
 
-
     val countsOne = tf
       .flatMap(line => line.split("\\s+"))
       .map(x => (x.toLowerCase(), 1))
