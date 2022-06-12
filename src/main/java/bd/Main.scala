@@ -68,17 +68,17 @@ object Main extends App {
   ))
 
   def sampleAndAgg(df: sql.DataFrame, cyl: Int, samplingPercentage: Int, iteration: Int): (Double, Double) = {
-    val sample25 = df
+    val sample = df
       .filter($"cyl" === cyl).rdd
       .takeSample(withReplacement = false, (df.count()*samplingPercentage/100).toInt)
-    val sample25RDD = sc.makeRDD(sample25)
+    val sampleRDD = sc.makeRDD(sample)
 
     var meanSum, varSum = BigDecimal(0)
     for (_ <- 1 to iteration) {
-      val sample100 = sample25RDD
-        .takeSample(withReplacement = true, sample25.length)
+      val resample = sampleRDD
+        .takeSample(withReplacement = true, sample.length)
 
-      val agg = spark.createDataFrame(sc.parallelize(sample100), schema)
+      val agg = spark.createDataFrame(sc.parallelize(resample), schema)
         .agg(mean("mpg"),
           variance("mpg"))
         .collect()
