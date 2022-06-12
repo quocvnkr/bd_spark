@@ -28,10 +28,10 @@ object Main extends App {
   val csv = sc.textFile("input/mtcars.csv")
   val headerAndRows = csv.map(line => line.split(",").map(_.trim))
   val header = headerAndRows.first
-  val mtcdata = headerAndRows.filter(_ (0) != header(0))
+  val mtcData = headerAndRows.filter(_ (0) != header(0))
 
   // step 2
-  val populationDF = mtcdata
+  val populationDF = mtcData
     .map(p => (p(2), p(1)))
     .toDF("cyl", "mpg")
 
@@ -48,10 +48,7 @@ object Main extends App {
 
   println("================= STEP 4, 5, 6 =================")
   println()
-  val schema = StructType(Array(
-    StructField("cyl", StringType, nullable = false),
-    StructField("mpg", StringType, nullable = false)
-  ))
+
 
   val samplingPercentage = args(0).toInt
   val iteration = args(1).toInt
@@ -64,6 +61,11 @@ object Main extends App {
   Seq((4, agg4._1, agg4._2), (6, agg6._1, agg6._2), (8, agg8._1, agg8._2))
     .toDF("Category", "Mean", "Var")
     .show()
+
+  val schema = StructType(Array(
+    StructField("cyl", StringType, nullable = false),
+    StructField("mpg", StringType, nullable = false)
+  ))
 
   def sampleAndAgg(df: sql.DataFrame, cyl: Int, samplingPercentage: Int, iteration: Int): (Double, Double) = {
     val sample25 = df
