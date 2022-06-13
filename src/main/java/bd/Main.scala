@@ -46,6 +46,18 @@ object Main extends App {
     .sort("Category")
     .show()
 
+  /*
+
+  populationDF.createOrReplaceTempView("population")
+
+  sqlContext.sql("" +
+    "SELECT cyl as Category, round(mean(mpg),2) as Mean, round(variance(mpg),2) as Var " +
+    "FROM population " +
+    "GROUP BY cyl " +
+    "ORDER BY cyl ").show()
+
+   */
+
   println("================= STEP 4, 5, 6 =================")
   println()
 
@@ -74,11 +86,8 @@ object Main extends App {
     val sampleRDD = sc.makeRDD(sample)
 
     var meanSum, varSum = BigDecimal(0)
-    var a = 0
-    for (a <- 1 to iteration) {
-      val resample = sampleRDD
-        .takeSample(withReplacement = true, sample.length)
-
+    for (_ <- 1 to iteration) {
+      val resample = sampleRDD.takeSample(withReplacement = true, sample.length)
       val agg = spark.createDataFrame(sc.parallelize(resample), schema)
         .agg(mean("mpg"),
           variance("mpg"))
@@ -86,15 +95,26 @@ object Main extends App {
 
       meanSum += agg(0).getDouble(0)
       varSum += agg(0).getDouble(1)
+
+//      meanSum += myMean(resample)
+//      varSum += myVariance(resample)
     }
 
     ((meanSum / iteration).setScale(2, RoundingMode.HALF_UP).toDouble,
       (varSum / iteration).setScale(2, RoundingMode.HALF_UP).toDouble)
   }
 
-//  def myMean(arr : Array[sql.Row]): (Double, Double) = {
-//    val arr0 = arr.map(_.getDouble(0))
-//    val arr1 = arr.map(_.getDouble(1))
-//    (arr0.sum / arr0.length, arr1.sum / arr1.length)
-//  }
+  /*
+
+  def myMean(arr : Array[sql.Row]): Double = {
+    val arr1 = arr.map(_.getString(1).toDouble)
+    arr1.sum / arr1.length
+  }
+
+  def myVariance(arr : Array[sql.Row]): Double = {
+    val avg = myMean(arr)
+    arr.map(_.getString(1).toDouble).map(a => math.pow(a - avg, 2)).sum / arr.length
+  }
+
+  */
 }
