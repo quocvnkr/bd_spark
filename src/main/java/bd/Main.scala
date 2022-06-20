@@ -18,7 +18,7 @@ object Main extends App {
   // step 1
   val spark = SparkSession.builder()
     .appName("Spark and SparkSQL")
-    .master("local")
+    .master("local[*]")
     .getOrCreate()
   val sc = spark.sparkContext
   sc.setLogLevel("WARN")
@@ -47,7 +47,6 @@ object Main extends App {
     .show()
 
   /*
-
   populationDF.createOrReplaceTempView("population")
 
   sqlContext.sql("" +
@@ -55,7 +54,6 @@ object Main extends App {
     "FROM population " +
     "GROUP BY cyl " +
     "ORDER BY cyl ").show()
-
    */
 
   println("================= STEP 4, 5, 6 =================")
